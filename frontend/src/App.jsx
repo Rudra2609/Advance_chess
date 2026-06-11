@@ -182,6 +182,7 @@ function App() {
   const listenToRoom = (code, isHostLocal) => {
     const gameRef = ref(db, `games/${code}`);
     dbRef.current = gameRef;
+    let hasStarted = false;
     
     onValue(gameRef, (snapshot) => {
       const data = snapshot.val();
@@ -195,6 +196,12 @@ function App() {
       
       if (data.status === "playing") {
         setShowLobbyModal(false);
+        
+        if (!hasStarted) {
+          hasStarted = true;
+          // The onValue callback is a closure, but hasStarted is tracked per listener instance
+          handleStartGame("online");
+        }
         
         // If we have a new move from the opponent, apply it locally
         if (data.lastMove) {
