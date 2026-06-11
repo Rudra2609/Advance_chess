@@ -18,7 +18,7 @@ onmessage = function(e) {
     
     if (e.data.type === 'calculate') {
         const { fen, elo } = e.data;
-        wasmModule.loadFen(fen);
+        wasmModule.setBoardFromFEN(fen);
         const aiMoveStr = wasmModule.getBestMove(elo);
         postMessage({ type: 'result', move: aiMoveStr });
     }
