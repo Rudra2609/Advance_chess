@@ -38,11 +38,11 @@ function App() {
   const [whiteTime, setWhiteTime] = useState(600);
   const [blackTime, setBlackTime] = useState(600);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const historyContainerRef = useRef(null);
 
   // Move history state
   const [chess] = useState(new Chess());
   const [moveHistory, setMoveHistory] = useState([]);
-  const historyEndRef = useRef(null);
 
   useEffect(() => {
     const initWasm = async () => {
@@ -158,8 +158,14 @@ function App() {
       try {
         chess.move({ from: fromStr, to: toStr, promotion: promoChars[promotionPiece] });
         setMoveHistory([...chess.history({ verbose: true })]);
-        // Scroll to bottom
-        setTimeout(() => historyEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+        setTimeout(() => {
+          if (historyContainerRef.current) {
+            historyContainerRef.current.scrollTo({
+              top: historyContainerRef.current.scrollHeight,
+              behavior: 'smooth'
+            });
+          }
+        }, 50);
       } catch (e) {
         console.warn("chess.js failed to mirror move:", e);
       }
@@ -525,7 +531,7 @@ function App() {
           
           <div className="history-sidebar">
             <h3 className="history-title">Move History</h3>
-            <div className="history-list">
+            <div className="history-list" ref={historyContainerRef}>
               {movePairs.map((pair, idx) => (
                 <div key={idx} className="history-row">
                   <div className="history-number">{idx + 1}.</div>
@@ -537,7 +543,6 @@ function App() {
                   </div>
                 </div>
               ))}
-              <div ref={historyEndRef} />
             </div>
           </div>
         </div>
