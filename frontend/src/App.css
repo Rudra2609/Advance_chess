@@ -817,6 +817,10 @@ body {
     aspect-ratio: 1;
   }
 
+  .board-wrapper {
+    order: -1;
+  }
+
   .sidebar {
     width: 100%;
     min-width: 0;
