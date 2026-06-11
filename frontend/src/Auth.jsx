@@ -36,7 +36,7 @@ export default function Auth({ onAuthSuccess }) {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1 className="title-small">Welcome to ChessX</h1>
+        <h1 className="title-small">Welcome to Tactic Flow</h1>
         <p className="subtitle">{isLogin ? 'Log in to continue' : 'Create an account'}</p>
         
         {error && <div className="auth-error">{error}</div>}

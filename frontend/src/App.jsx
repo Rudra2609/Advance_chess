@@ -416,7 +416,7 @@ function App() {
       {gameMode === "menu" ? (
         <div className="menu-container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-            <h1 className="title" style={{ marginBottom: 0 }}>Advance Chess</h1>
+            <h1 className="title" style={{ marginBottom: 0 }}>Tactic Flow</h1>
             <button className="btn" style={{ padding: '8px 16px', fontSize: '0.9rem', background: '#334155' }} onClick={() => signOut(auth)}>Log Out</button>
           </div>
           <div className="menu-card">
