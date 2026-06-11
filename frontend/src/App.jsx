@@ -799,13 +799,20 @@ function App() {
             )}
             
             <div className="clocks-container">
-              <div className={`clock ${wasmModule && wasmModule.getTurn() === 1 ? 'active' : ''}`}>
-                <span className="clock-label">{gameMode === "ai" ? "AI" : "Black"}</span>
-                <span className="clock-time">{formatTime(blackTime)}</span>
+              {/* TOP CLOCK (Opponent) */}
+              <div className={`clock ${wasmModule && wasmModule.getTurn() === (playerColor === 'white' ? 1 : 0) ? 'active' : ''}`}>
+                <span className="clock-label">
+                  {gameMode === "ai" ? "AI" : (opponentName || "Opponent")} ({playerColor === 'white' ? "Black" : "White"})
+                </span>
+                <span className="clock-time">{formatTime(playerColor === 'white' ? blackTime : whiteTime)}</span>
               </div>
-              <div className={`clock ${wasmModule && wasmModule.getTurn() === 0 ? 'active' : ''}`}>
-                <span className="clock-label">{user?.displayName || "Player"} (White)</span>
-                <span className="clock-time">{formatTime(whiteTime)}</span>
+              
+              {/* BOTTOM CLOCK (Player) */}
+              <div className={`clock ${wasmModule && wasmModule.getTurn() === (playerColor === 'white' ? 0 : 1) ? 'active' : ''}`}>
+                <span className="clock-label">
+                  {user?.displayName || "Player"} ({playerColor === 'white' ? "White" : "Black"})
+                </span>
+                <span className="clock-time">{formatTime(playerColor === 'white' ? whiteTime : blackTime)}</span>
               </div>
             </div>
 
