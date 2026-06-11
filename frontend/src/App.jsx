@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Chessboard } from 'react-chessboard';
+import { Chess } from 'chess.js';
 import './App.css';
 
 function getPieceAt(fen, x, y) {
@@ -33,6 +34,11 @@ function App() {
   const [whiteTime, setWhiteTime] = useState(600);
   const [blackTime, setBlackTime] = useState(600);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+
+  // Move history state
+  const [chess] = useState(new Chess());
+  const [moveHistory, setMoveHistory] = useState([]);
+  const historyEndRef = useRef(null);
 
   useEffect(() => {
     const initWasm = async () => {
@@ -95,7 +101,9 @@ function App() {
       return;
     }
     wasmModule.initBoard();
+    chess.reset();
     setFen(wasmModule.getBoardState());
+    setMoveHistory([]);
     setGameMode(mode);
     setGameState(0);
     setPendingPromotion(null);
@@ -130,6 +138,19 @@ function App() {
     const isLegal = wasmModule.makeMove(fromX, fromY, toX, toY, promotionPiece);
     if (isLegal) {
       setFen(wasmModule.getBoardState());
+      
+      // Update chess.js shadow board to generate SAN
+      const fromStr = String.fromCharCode(fromY + 97) + (8 - fromX);
+      const toStr = String.fromCharCode(toY + 97) + (8 - toX);
+      const promoChars = ['', 'q', 'b', 'n', 'r'];
+      try {
+        chess.move({ from: fromStr, to: toStr, promotion: promoChars[promotionPiece] });
+        setMoveHistory(chess.history({ verbose: true }));
+        // Scroll to bottom
+        setTimeout(() => historyEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+      } catch (e) {
+        console.warn("chess.js failed to mirror move:", e);
+      }
       
       // Apply increment
       if (timeControl.increment > 0 && timeControl.minutes > 0) {
@@ -202,6 +223,24 @@ function App() {
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
+
+  const formatSan = (san, color) => {
+    if (san.startsWith('N')) return <><span className={`piece-icon ${color}`}>♞</span>{san.slice(1)}</>;
+    if (san.startsWith('B')) return <><span className={`piece-icon ${color}`}>♝</span>{san.slice(1)}</>;
+    if (san.startsWith('R')) return <><span className={`piece-icon ${color}`}>♜</span>{san.slice(1)}</>;
+    if (san.startsWith('Q')) return <><span className={`piece-icon ${color}`}>♛</span>{san.slice(1)}</>;
+    if (san.startsWith('K')) return <><span className={`piece-icon ${color}`}>♚</span>{san.slice(1)}</>;
+    return san;
+  };
+
+  // Group moves into pairs for display
+  const movePairs = [];
+  for (let i = 0; i < moveHistory.length; i += 2) {
+    movePairs.push({
+      white: moveHistory[i],
+      black: moveHistory[i + 1]
+    });
+  }
 
   return (
     <div className="app-background">
@@ -296,6 +335,24 @@ function App() {
                   arePiecesDraggable: gameState === 0 && !pendingPromotion
                 }}
               />
+            </div>
+          </div>
+          
+          <div className="history-sidebar">
+            <h3 className="history-title">Move History</h3>
+            <div className="history-list">
+              {movePairs.map((pair, idx) => (
+                <div key={idx} className="history-row">
+                  <div className="history-number">{idx + 1}.</div>
+                  <div className={`history-move ${moveHistory.length - 1 === idx * 2 ? 'active-move' : ''}`}>
+                    {formatSan(pair.white.san, 'white-piece')}
+                  </div>
+                  <div className={`history-move ${moveHistory.length - 1 === idx * 2 + 1 ? 'active-move' : ''}`}>
+                    {pair.black ? formatSan(pair.black.san, 'black-piece') : ''}
+                  </div>
+                </div>
+              ))}
+              <div ref={historyEndRef} />
             </div>
           </div>
         </div>

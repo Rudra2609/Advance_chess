@@ -300,3 +300,98 @@ body {
   font-variant-numeric: tabular-nums;
   color: #fff;
 }
+
+.history-sidebar {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  min-width: 250px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+}
+
+.history-title {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-main);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 10px;
+}
+
+.history-list {
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 5px;
+}
+
+/* Custom scrollbar for history list */
+.history-list::-webkit-scrollbar {
+  width: 6px;
+}
+.history-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.history-number {
+  color: var(--text-sub);
+  width: 40px;
+  text-align: right;
+  padding-right: 15px;
+  opacity: 0.7;
+}
+
+.history-move {
+  flex: 1;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.2s;
+  color: #e2e8f0;
+}
+
+.history-move:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.active-move {
+  background: rgba(255,255,255,0.15) !important;
+  color: #fff;
+  box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
+.piece-icon {
+  font-size: 1.3rem;
+  display: inline-block;
+  line-height: 1;
+}
+
+.white-piece {
+  color: #fff;
+  text-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+
+.black-piece {
+  color: #cbd5e1;
+}
