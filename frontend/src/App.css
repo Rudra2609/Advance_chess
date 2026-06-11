@@ -125,6 +125,55 @@ body {
   font-size: 0.9rem;
 }
 
+.time-control-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.time-control-section label {
+  color: var(--text-sub);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.time-select {
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--text-main);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+}
+
+.time-select:hover {
+  border-color: var(--accent);
+  background-color: rgba(14, 165, 233, 0.2);
+}
+
+.time-select option {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+}
+
 .btn {
   position: relative;
   background: rgba(255, 255, 255, 0.05);
