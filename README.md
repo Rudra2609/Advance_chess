@@ -1,58 +1,68 @@
-# chess
+# Tactic Flow ♟️
 
-# C++ Chess Game Engine
+Welcome to **Tactic Flow**, a high-performance, modern web-based chess engine and application.
 
-This is a fully-featured **C++ Chess Game Engine** that supports all the official rules of chess, including:
+Play it live here: 👉 **[https://rudra2609.github.io/Tactic_Flow/](https://rudra2609.github.io/Tactic_Flow/)**
 
-- 🏰 **Castling** (both king-side and queen-side)
-- 🐾 **En Passant**
-- 👑 **Pawn Promotion**
-- ☠️ **Check, Checkmate, and Stalemate Detection**
-- ♟️ Standard Chess Movement and Validation
+![Tactic Flow](https://github.com/user-attachments/assets/1903e52b-59d7-4433-b17e-639462da5ae0)
 
 ---
 
-## 📁 Project Structure
+## ✨ Features
 
-- `Board.h` / `Board.cpp`: Contains the core `Board` class and all chess logic.
-- `Space.h` / `Space.cpp`: Represents a single square on the board and holds information about the piece on it.
-- `main.cpp`: Entry point for running the game and interacting with the engine.
-- (Optional) `Player.h`, `Game.h`, etc. if extended.
-
----
-
-## ✅ Features
-
-- **Move Validation**: Ensures all player moves are legal.
-- **Special Moves Support**: Includes castling, en passant, and pawn promotion.
-- **Game End Detection**: Detects checkmate, stalemate, and draw.
-- **Undo Support** (if implemented): Revert moves safely (e.g., during AI search).
-- **Console-based UI**: Basic board printing and text-based interaction.
+- **Blazing Fast AI Engine**: At its core, Tactic Flow runs a custom **C++ Chess Engine** that has been compiled directly into **WebAssembly (WASM)**. This allows the AI to calculate deep variations and evaluate positions at near-native speeds directly in your browser without requiring a backend server.
+- **Player vs AI & Player vs Player Modes**: Test your skills against the built-in AI with an adjustable ELO slider (250 to 3200), or play locally against a friend with dedicated chess clocks.
+- **Interactive Board Editor**: Set up custom scenarios, puzzles, or historical game positions using the drag-and-drop Board Editor, and then instantly play them out against the AI.
+- **Secure Authentication**: Built-in **Firebase Authentication** allows players to securely log in, sign up, and see their personalized Display Names on the player dashboard.
+- **Stunning UI/UX**: Built with **React** and `react-chessboard`, featuring a beautiful glassmorphism aesthetic, fully responsive mobile support, smooth move animations, and both Drag & Drop + Click-to-Move support.
+- **Full Ruleset Support**: The underlying engine fully validates moves and perfectly understands Castling, En Passant, Pawn Promotion, Checkmates, and Stalemates.
 
 ---
 
-## 🧠 How It Works
+## 🛠️ Tech Stack
 
-The core game loop uses the `Board` class to:
-
-1. Display the board
-2. Accept user input
-3. Validate the move
-4. Apply the move (and check for special rules)
-5. Check for check/checkmate/stalemate
+- **Frontend**: React, Vite, CSS (Glassmorphism design)
+- **Chess Logic & UI**: `chess.js`, `react-chessboard`
+- **Core Engine**: C++
+- **Compilation**: Emscripten (WebAssembly)
+- **Authentication**: Firebase
+- **Hosting**: GitHub Pages
 
 ---
-![Screenshot 2025-04-16 133528](https://github.com/user-attachments/assets/1903e52b-59d7-4433-b17e-639462da5ae0)  
-![Screenshot 2025-04-16 133541](https://github.com/user-attachments/assets/f72680b0-8124-474f-802e-6b2a1f056197)  
-![Screenshot 2025-04-16 133643](https://github.com/user-attachments/assets/24961e9e-6049-4d16-b902-82ef079f80a8)  
-![Screenshot 2025-04-16 133554](https://github.com/user-attachments/assets/0572f283-6d71-4147-9b43-4f488d4e359c)  
 
-## 🛠️ How to Compile
+## 🚀 Running Locally
 
-Make sure you have a C++17-compatible compiler.
+If you want to clone and run the project locally on your machine:
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/Rudra2609/Tactic_Flow.git
+   cd Tactic_Flow
+   ```
+
+2. **Navigate to the frontend directory**:
+   ```bash
+   cd frontend
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+4. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
+
+*(Note: The WebAssembly module `chess_module.js` and `chess_module.wasm` are already pre-compiled and included in the `frontend/public` directory, so you do not need to install C++ compilers or Emscripten to run the frontend!)*
+
+---
+
+## 🧠 Engine Compilation (Advanced)
+
+If you modify the core C++ engine files (`Board.cpp`, `AI.cpp`, etc.) and want to recompile the WebAssembly module, you will need the [Emscripten SDK](https://emscripten.org/):
 
 ```bash
-g++ -std=c++17 main.cpp Board.cpp Space.cpp -o chess
-./chess
- 
-
+emcc Board.cpp BoardAI.cpp AI.cpp Square.cpp WasmBindings.cpp -o frontend/public/chess_module.js -s EXPORT_ES6=1 -s MODULARIZE=1 -s ENVIRONMENT=web -O3 --bind
+```
