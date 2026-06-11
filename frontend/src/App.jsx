@@ -353,12 +353,11 @@ function App() {
     try {
       if (mod.getGameState() !== 0) return;
       
-      const fen = mod.getBoardState();
-      
+      const currentFen = mod.getBoardState();
       const aiMoveStr = await new Promise((resolve) => {
          resolveAIMove.current = resolve;
          if (aiWorkerRef.current) {
-             aiWorkerRef.current.postMessage({ type: 'calculate', fen, elo });
+             aiWorkerRef.current.postMessage({ type: 'calculate', fen: currentFen, elo });
          } else {
              resolve(mod.getBestMove(elo)); // Fallback
          }

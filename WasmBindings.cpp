@@ -30,30 +30,9 @@ bool makeMove(int fromX, int fromY, int toX, int toY, int promotion) {
 std::string getBoardState() {
     std::string fen = globalBoard.generatePositionString();
     
-    // Active color
-    fen += (globalBoard.getTurn() == WHITE) ? " w " : " b ";
-    
-    // Castling rights
-    std::string castling = "";
-    if (globalBoard.getWhiteCanCastleKingside()) castling += "K";
-    if (globalBoard.getWhiteCanCastleQueenside()) castling += "Q";
-    if (globalBoard.getBlackCanCastleKingside()) castling += "k";
-    if (globalBoard.getBlackCanCastleQueenside()) castling += "q";
-    if (castling.empty()) castling = "-";
-    fen += castling + " ";
-    
-    // En Passant
-    auto ep = globalBoard.getEnPassantTarget();
-    if (ep.first != -1 && ep.second != -1) {
-        char file = 'a' + ep.second;
-        char rank = '8' - ep.first;
-        fen += std::string(1, file) + std::string(1, rank) + " ";
-    } else {
-        fen += "- ";
-    }
-    
-    // Halfmove & Fullmove
-    fen += std::to_string(globalBoard.getHalfMoveClock()) + " " + 
+    // generatePositionString already outputs board, turn, castling, and en passant (4 parts)
+    // We just need to append the halfmove and fullmove clocks
+    fen += " " + std::to_string(globalBoard.getHalfMoveClock()) + " " + 
            std::to_string(globalBoard.getFullMoveNumber());
            
     return fen;
