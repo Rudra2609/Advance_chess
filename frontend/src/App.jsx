@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from './firebase';
+import { ref, set, onValue, update, get, onDisconnect, remove } from 'firebase/database';
+import { auth, db } from './firebase';
 import Auth from './Auth';
 import './App.css';
 
@@ -45,6 +46,16 @@ function App() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const historyContainerRef = useRef(null);
   const [moveFrom, setMoveFrom] = useState(null);
+  const [playerColor, setPlayerColor] = useState("white");
+
+  // Multiplayer state
+  const [roomId, setRoomId] = useState(null);
+  const [joinRoomCode, setJoinRoomCode] = useState("");
+  const [isHost, setIsHost] = useState(false);
+  const [opponentName, setOpponentName] = useState(null);
+  const [showLobbyModal, setShowLobbyModal] = useState(false);
+  const [lobbyError, setLobbyError] = useState("");
+  const dbRef = useRef(null); // Keep track of current game ref for cleanup
 
   // Move history state
   const [chess] = useState(new Chess());
@@ -112,6 +123,93 @@ function App() {
     }
   };
 
+  const createRoom = async () => {
+    setLobbyError("");
+    const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const gameRef = ref(db, `games/${newRoomId}`);
+    
+    await set(gameRef, {
+      hostName: user.displayName || user.email.split('@')[0],
+      guestName: null,
+      status: "waiting", // waiting, playing, finished
+      lastMove: null
+    });
+
+    onDisconnect(gameRef).remove(); // Auto-cleanup if host drops
+
+    setRoomId(newRoomId);
+    setIsHost(true);
+    setPlayerColor("white");
+    listenToRoom(newRoomId, true);
+  };
+
+  const joinRoom = async () => {
+    if (!joinRoomCode) return;
+    setLobbyError("");
+    const code = joinRoomCode.toUpperCase();
+    const gameRef = ref(db, `games/${code}`);
+    const snapshot = await get(gameRef);
+    
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      if (data.status === "waiting") {
+        await update(gameRef, {
+          guestName: user.displayName || user.email.split('@')[0],
+          status: "playing"
+        });
+        setRoomId(code);
+        setIsHost(false);
+        setPlayerColor("black");
+        listenToRoom(code, false);
+      } else {
+        setLobbyError("Game is already in progress.");
+      }
+    } else {
+      setLobbyError("Invalid room code.");
+    }
+  };
+
+  const listenToRoom = (code, isHostLocal) => {
+    const gameRef = ref(db, `games/${code}`);
+    dbRef.current = gameRef;
+    
+    onValue(gameRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) {
+        setStatus("Opponent disconnected. Game over.");
+        setGameState(1);
+        return;
+      }
+
+      setOpponentName(isHostLocal ? data.guestName : data.hostName);
+      
+      if (data.status === "playing") {
+        setShowLobbyModal(false);
+        
+        // If we have a new move from the opponent, apply it locally
+        if (data.lastMove) {
+          const expectedTurn = isHostLocal ? 1 : 0; // Host expects black's move (1)
+          if (data.lastMove.turn === expectedTurn) {
+            // It's the opponent's move, we need to apply it
+            // We use a window global or ref to avoid stale closures, but for now we'll rely on a useEffect to process it
+            setIncomingMove(data.lastMove);
+          }
+        }
+      }
+    });
+  };
+
+  const [incomingMove, setIncomingMove] = useState(null);
+
+  useEffect(() => {
+    if (incomingMove && wasmModule && gameMode === "online") {
+      const { fromX, fromY, toX, toY, promo, turn } = incomingMove;
+      if (wasmModule.getTurn() === turn) {
+        executeMove(fromX, fromY, toX, toY, promo, true); // true = isOnlineSync
+      }
+    }
+  }, [incomingMove, wasmModule, gameMode]);
+
   const handleStartGame = (mode) => {
     if (!wasmModule) {
       alert("Engine not loaded yet!");
@@ -125,6 +223,12 @@ function App() {
       return;
     }
 
+    let actualColor = playerColor;
+    if (mode === "ai" && playerColor === "random") {
+      actualColor = Math.random() < 0.5 ? "white" : "black";
+      setPlayerColor(actualColor); // Save the resolved color so the board orients correctly
+    }
+
     wasmModule.initBoard();
     chess.reset();
     setFen(wasmModule.getBoardState());
@@ -135,7 +239,26 @@ function App() {
     setWhiteTime(timeControl.minutes * 60);
     setBlackTime(timeControl.minutes * 60);
     setIsTimerRunning(true);
-    setStatus(mode === "ai" ? "Your turn (White)" : "White's turn");
+    setStatus(mode === "ai" ? `Your turn (${actualColor})` : "White's turn");
+
+    if (mode === "ai" && actualColor === "black") {
+      setStatus("AI thinking...");
+      setTimeout(() => triggerAIMove(wasmModule), 50);
+    }
+  };
+
+  const triggerAIMove = (mod) => {
+    try {
+      if (mod.getGameState() !== 0) return;
+      const aiMoveStr = mod.getBestMove(elo);
+      const parts = aiMoveStr.split(",");
+      if (parts.length === 4) {
+        const [aiFromX, aiFromY, aiToX, aiToY] = parts.map(Number);
+        executeMove(aiFromX, aiFromY, aiToX, aiToY, 1);
+      }
+    } catch(e) {
+      setStatus("AI Error: " + e.message);
+    }
   };
 
   const processGameState = (mod) => {
@@ -158,7 +281,7 @@ function App() {
     return state !== 0;
   };
 
-  const executeMove = (fromX, fromY, toX, toY, promotionPiece) => {
+  const executeMove = (fromX, fromY, toX, toY, promotionPiece, isOnlineSync = false) => {
     const activeColorBefore = wasmModule.getTurn();
     const isLegal = wasmModule.makeMove(fromX, fromY, toX, toY, promotionPiece);
     if (isLegal) {
@@ -192,23 +315,19 @@ function App() {
       if (processGameState(wasmModule)) return true;
       
       setStatus(wasmModule.getTurn() === 0 ? "White's turn" : "Black's turn");
+
+      if (gameMode === "online" && !isOnlineSync && dbRef.current) {
+        update(dbRef.current, {
+          lastMove: { fromX, fromY, toX, toY, promo: promotionPiece, turn: activeColorBefore }
+        }).catch(e => console.error("Firebase sync error:", e));
+      }
       
-      if (gameMode === "ai" && wasmModule.getTurn() === 1) {
-        setStatus("AI thinking...");
-        setTimeout(() => {
-          try {
-            if (wasmModule.getGameState() !== 0) return;
-            const aiMoveStr = wasmModule.getBestMove(elo);
-            const parts = aiMoveStr.split(",");
-            if (parts.length === 4) {
-              const [aiFromX, aiFromY, aiToX, aiToY] = parts.map(Number);
-              // Recursively call executeMove so AI move is also logged in history
-              executeMove(aiFromX, aiFromY, aiToX, aiToY, 1);
-            }
-          } catch(e) {
-            setStatus("AI Error: " + e.message);
-          }
-        }, 50);
+      if (gameMode === "ai") {
+        const aiColorId = playerColor === "white" ? 1 : 0;
+        if (wasmModule.getTurn() === aiColorId) {
+          setStatus("AI thinking...");
+          setTimeout(() => triggerAIMove(wasmModule), 50);
+        }
       }
       return true;
     } else {
@@ -226,6 +345,12 @@ function App() {
       const fromX = 8 - parseInt(sourceSquare[1]);
       const toY = targetSquare.charCodeAt(0) - 97;
       const toX = 8 - parseInt(targetSquare[1]);
+
+      if ((gameMode === "ai" && wasmModule.getTurn() === (playerColor === "white" ? 1 : 0)) ||
+          (gameMode === "online" && wasmModule.getTurn() === (playerColor === "white" ? 1 : 0))) {
+        // Prevent moving opponent's pieces
+        return false;
+      }
 
       const piece = getPieceAt(fen, fromX, fromY);
       
@@ -441,7 +566,42 @@ function App() {
 
             <h2>Select Game Mode</h2>
             <button className="btn" onClick={() => handleStartGame("pvp")}>Player vs Player</button>
-            <div className="ai-section">
+            <button className="btn" style={{background: '#10b981', marginTop: '1rem'}} onClick={() => setShowLobbyModal(true)}>Play with Friend</button>
+
+            {showLobbyModal && (
+              <div className="lobby-modal">
+                <h3>Online Multiplayer</h3>
+                {lobbyError && <p style={{color: '#f43f5e', fontWeight: 'bold'}}>{lobbyError}</p>}
+                
+                {roomId ? (
+                  <div className="room-info">
+                    <p>Room Code: <strong>{roomId}</strong></p>
+                    <p>Waiting for opponent...</p>
+                    <button className="btn" onClick={() => {
+                      if (dbRef.current) remove(dbRef.current);
+                      setRoomId(null);
+                    }}>Cancel</button>
+                  </div>
+                ) : (
+                  <>
+                    <button className="btn" onClick={createRoom}>Create Game</button>
+                    <div style={{ margin: '1.5rem 0', display: 'flex', gap: '0.5rem' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Enter Room Code" 
+                        value={joinRoomCode} 
+                        onChange={(e) => setJoinRoomCode(e.target.value)} 
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: '#1e293b', color: '#fff', flex: 1 }}
+                      />
+                      <button className="btn" onClick={joinRoom} style={{ background: '#3b82f6', width: 'auto', padding: '8px 16px' }}>Join</button>
+                    </div>
+                    <button className="btn back-btn" onClick={() => setShowLobbyModal(false)}>Close</button>
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="ai-section" style={{ marginTop: '2rem' }}>
               <label>AI Difficulty (ELO): <strong>{elo}</strong></label>
               <input 
                 type="range" 
@@ -450,6 +610,11 @@ function App() {
                 onChange={(e) => setElo(parseInt(e.target.value))}
                 className="slider"
               />
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem', marginBottom: '1rem' }}>
+                <button className={`palette-btn ${playerColor === 'white' ? 'selected' : ''}`} onClick={() => setPlayerColor('white')}>♔ White</button>
+                <button className={`palette-btn ${playerColor === 'random' ? 'selected' : ''}`} onClick={() => setPlayerColor('random')}>? Random</button>
+                <button className={`palette-btn ${playerColor === 'black' ? 'selected' : ''}`} onClick={() => setPlayerColor('black')}>♚ Black</button>
+              </div>
               <button className="btn ai-btn" onClick={() => handleStartGame("ai")}>Start vs AI</button>
             </div>
 
@@ -575,7 +740,7 @@ function App() {
                   position: fen,
                   onPieceDrop: onDrop,
                   onSquareClick: onGameSquareClick,
-                  boardOrientation: gameMode === "ai" && elo === 3200 ? "black" : "white",
+                  boardOrientation: gameMode === "ai" ? playerColor : "white",
                   squareStyles: moveFrom ? { [moveFrom]: { backgroundColor: "rgba(14, 165, 233, 0.5)", boxShadow: "inset 0 0 15px rgba(14, 165, 233, 0.8)" } } : {},
                   darkSquareStyle: { backgroundColor: "#312e81" },
                   lightSquareStyle: { backgroundColor: "#94a3b8" },
