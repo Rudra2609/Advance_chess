@@ -473,7 +473,7 @@ function App() {
     try { chess.load(fenParts.join(' ')); } catch(e){}
   };
 
-  const validateAndPlayEditor = () => {
+  const validateAndPlayEditor = (mode) => {
     let wKings = 0, bKings = 0;
     const boardArr = chess.board();
     for (let r = 0; r < 8; r++) {
@@ -517,20 +517,16 @@ function App() {
       chess.load(fullFen);
       setFen(fullFen);
       setMoveHistory([]);
-      setGameMode("ai");
-      setGameState(0);
       
-      let chosenColor = playerColor;
-      if (chosenColor === "random") {
-        chosenColor = Math.random() < 0.5 ? "white" : "black";
-      }
-      setPlayerColor(chosenColor);
-      
-      const isAITurn = fenParts[1] === (chosenColor === "white" ? "b" : "w");
-      if (isAITurn) {
-        setStatus("AI thinking...");
-        setTimeout(() => triggerAIMove(wasmModule), 50);
+      if (mode === "pvp") {
+        setGameMode("pvp");
+        setGameState(0);
+        setStatus(fenParts[1] === 'w' ? "White's turn" : "Black's turn");
       } else {
+        setGameMode("ai");
+        setGameState(0);
+        setElo(3200); // Force optimal AI
+        setPlayerColor(fenParts[1] === 'w' ? 'white' : 'black'); // User plays the current turn
         setStatus(fenParts[1] === 'w' ? "White's turn" : "Black's turn");
       }
       setWhiteTime(timeControl.minutes * 60);
@@ -543,18 +539,18 @@ function App() {
   };
 
   const piecesArray = [
-    { id: 'wK', icon: <img src="/pieces/wK.svg" alt="White King" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'wQ', icon: <img src="/pieces/wQ.svg" alt="White Queen" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'wR', icon: <img src="/pieces/wR.svg" alt="White Rook" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'wB', icon: <img src="/pieces/wB.svg" alt="White Bishop" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'wN', icon: <img src="/pieces/wN.svg" alt="White Knight" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'wP', icon: <img src="/pieces/wP.svg" alt="White Pawn" style={{width: '75%', height: '75%'}} /> },
-    { id: 'bK', icon: <img src="/pieces/bK.svg" alt="Black King" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'bQ', icon: <img src="/pieces/bQ.svg" alt="Black Queen" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'bR', icon: <img src="/pieces/bR.svg" alt="Black Rook" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'bB', icon: <img src="/pieces/bB.svg" alt="Black Bishop" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'bN', icon: <img src="/pieces/bN.svg" alt="Black Knight" style={{width: '75%', height: '75%'}} /> }, 
-    { id: 'bP', icon: <img src="/pieces/bP.svg" alt="Black Pawn" style={{width: '75%', height: '75%'}} /> },
+    { id: 'wK', icon: <img src="pieces/wK.svg" alt="wK" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'wQ', icon: <img src="pieces/wQ.svg" alt="wQ" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'wR', icon: <img src="pieces/wR.svg" alt="wR" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'wB', icon: <img src="pieces/wB.svg" alt="wB" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'wN', icon: <img src="pieces/wN.svg" alt="wN" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'wP', icon: <img src="pieces/wP.svg" alt="wP" style={{width: '60%', height: '60%'}} /> },
+    { id: 'bK', icon: <img src="pieces/bK.svg" alt="bK" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'bQ', icon: <img src="pieces/bQ.svg" alt="bQ" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'bR', icon: <img src="pieces/bR.svg" alt="bR" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'bB', icon: <img src="pieces/bB.svg" alt="bB" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'bN', icon: <img src="pieces/bN.svg" alt="bN" style={{width: '60%', height: '60%'}} /> }, 
+    { id: 'bP', icon: <img src="pieces/bP.svg" alt="bP" style={{width: '60%', height: '60%'}} /> },
     { id: 'eraser', icon: '❌' }
   ];
 
@@ -722,24 +718,9 @@ function App() {
                 />
               </div>
 
-              <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
-                <label>AI Difficulty (ELO): <strong>{elo}</strong></label>
-                <input 
-                  type="range" 
-                  min="250" max="3200" step="50"
-                  value={elo} 
-                  onChange={(e) => setElo(parseInt(e.target.value))}
-                  className="slider"
-                />
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem', marginBottom: '1rem' }}>
-                  <button className={`color-select-btn ${playerColor === 'white' ? 'selected' : ''}`} style={{fontSize: '0.8rem', padding: '6px'}} onClick={() => setPlayerColor('white')}>♔ White</button>
-                  <button className={`color-select-btn ${playerColor === 'random' ? 'selected' : ''}`} style={{fontSize: '0.8rem', padding: '6px'}} onClick={() => setPlayerColor('random')}>? Random</button>
-                  <button className={`color-select-btn ${playerColor === 'black' ? 'selected' : ''}`} style={{fontSize: '0.8rem', padding: '6px'}} onClick={() => setPlayerColor('black')}>♚ Black</button>
-                </div>
-              </div>
-
               <div className="editor-actions">
-                <button className="btn ai-btn" onClick={validateAndPlayEditor}>Play vs AI</button>
+                <button className="btn" onClick={() => validateAndPlayEditor("pvp")}>Play Manually</button>
+                <button className="btn ai-btn" onClick={() => validateAndPlayEditor("ai")}>Play vs AI</button>
                 <button className="btn" onClick={() => setGameMode("menu")}>Back to Menu</button>
               </div>
             </div>
