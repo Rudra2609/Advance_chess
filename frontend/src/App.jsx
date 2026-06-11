@@ -23,7 +23,7 @@ function getPieceAt(fen, x, y) {
 function App() {
   const [gameMode, setGameMode] = useState("menu"); // menu, pvp, ai, editor
   const [fen, setFen] = useState("start");
-  const [elo, setElo] = useState(1200);
+  const [elo, setElo] = useState(250);
   const [wasmModule, setWasmModule] = useState(null);
   const [status, setStatus] = useState("Loading engine...");
   const [gameState, setGameState] = useState(0); // 0=Ongoing, 1=Checkmate, 2=Stalemate, 3=Draw50, 4=DrawRep, 5=InsufficientMaterial, 6=Timeout, 7=TimeoutvsInsufficient
@@ -394,7 +394,7 @@ function App() {
               <label>AI Difficulty (ELO): <strong>{elo}</strong></label>
               <input 
                 type="range" 
-                min="800" max="3200" step="400"
+                min="250" max="3200" step="50"
                 value={elo} 
                 onChange={(e) => setElo(parseInt(e.target.value))}
                 className="slider"
