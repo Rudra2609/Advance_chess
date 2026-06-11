@@ -117,14 +117,17 @@ function App() {
             <button onClick={() => handleStartGame("menu")} className="btn back-btn">End Game</button>
           </div>
           <div className="board-wrapper">
-            <Chessboard 
-              position={fen} 
-              onPieceDrop={onDrop} 
-              boardWidth={600} 
-              customDarkSquareStyle={{ backgroundColor: "#779556" }} 
-              customLightSquareStyle={{ backgroundColor: "#ebecd0" }} 
-              animationDuration={200}
-            />
+            <div style={{ width: 600, height: 600 }}>
+              <Chessboard 
+                options={{
+                  position: fen,
+                  onPieceDrop: onDrop,
+                  darkSquareStyle: { backgroundColor: "#779556" },
+                  lightSquareStyle: { backgroundColor: "#ebecd0" },
+                  animationDurationInMs: 200
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
