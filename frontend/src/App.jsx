@@ -25,8 +25,26 @@ function getPieceAt(fen, x, y) {
 }
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+
+  const aiWorkerRef = useRef(null);
+  const resolveAIMove = useRef(null);
+
+  // Initialize Web Worker for AI
+  useEffect(() => {
+    aiWorkerRef.current = new Worker('/ai_worker.js');
+    aiWorkerRef.current.onmessage = (e) => {
+      if (e.data.type === 'result' && resolveAIMove.current) {
+        resolveAIMove.current(e.data.move);
+        resolveAIMove.current = null;
+      }
+    };
+    return () => {
+      if (aiWorkerRef.current) aiWorkerRef.current.terminate();
+    };
+  }, []);
+  const [user, setUser] = useState(null);
   const [gameMode, setGameMode] = useState("menu"); // menu, pvp, ai, editor
   const [fen, setFen] = useState("start");
   const [elo, setElo] = useState(250);
@@ -332,10 +350,21 @@ function App() {
     handleStartGame("menu");
   };
 
-  const triggerAIMove = (mod) => {
+  const triggerAIMove = async (mod) => {
     try {
       if (mod.getGameState() !== 0) return;
-      const aiMoveStr = mod.getBestMove(elo);
+      
+      const fen = mod.getBoardState();
+      
+      const aiMoveStr = await new Promise((resolve) => {
+         resolveAIMove.current = resolve;
+         if (aiWorkerRef.current) {
+             aiWorkerRef.current.postMessage({ type: 'calculate', fen, elo });
+         } else {
+             resolve(mod.getBestMove(elo)); // Fallback
+         }
+      });
+      
       const parts = aiMoveStr.split(",");
       if (parts.length === 4) {
         const [aiFromX, aiFromY, aiToX, aiToY] = parts.map(Number);
