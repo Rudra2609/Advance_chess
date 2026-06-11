@@ -204,7 +204,7 @@ function App() {
         
         if (!hasStarted) {
           hasStarted = true;
-          handleStartGame("online");
+          handleStartGame("online", isHostLocal ? "white" : "black");
         }
         
         // If we have a new move from the opponent, apply it locally
@@ -229,7 +229,7 @@ function App() {
     }
   }, [incomingMove, wasmModule, gameMode]);
 
-  const handleStartGame = (mode) => {
+  const handleStartGame = (mode, onlineColor = null) => {
     if (!wasmModule) {
       alert("Engine not loaded yet!");
       return;
@@ -246,6 +246,9 @@ function App() {
     if (mode === "ai" && playerColor === "random") {
       actualColor = Math.random() < 0.5 ? "white" : "black";
       setPlayerColor(actualColor); // Save the resolved color so the board orients correctly
+    } else if (mode === "online" && onlineColor) {
+      actualColor = onlineColor;
+      setPlayerColor(actualColor); // Sync state for UI
     }
 
     wasmModule.initBoard();
