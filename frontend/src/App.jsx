@@ -417,7 +417,10 @@ function App() {
         <div className="menu-container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
             <h1 className="title" style={{ marginBottom: 0 }}>Tactic Flow</h1>
-            <button className="btn" style={{ padding: '8px 16px', fontSize: '0.9rem', background: '#334155' }} onClick={() => signOut(auth)}>Log Out</button>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+              <span style={{ color: 'var(--text-sub)', fontSize: '0.9rem', fontWeight: 600 }}>{user?.displayName || user?.email}</span>
+              <button className="btn" style={{ padding: '8px 16px', fontSize: '0.9rem', background: '#334155' }} onClick={() => signOut(auth)}>Log Out</button>
+            </div>
           </div>
           <div className="menu-card">
             <p className="status-text">{status}</p>
