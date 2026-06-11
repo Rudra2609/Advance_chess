@@ -622,17 +622,19 @@ function App() {
                 ) : (
                   <>
                     <button className="btn" onClick={createRoom}>Create Game</button>
-                    <div style={{ margin: '1.5rem 0', display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ margin: '1.5rem 0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                       <input 
                         type="text" 
                         placeholder="Enter Room Code" 
                         value={joinRoomCode} 
                         onChange={(e) => setJoinRoomCode(e.target.value)} 
-                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc', background: '#1e293b', color: '#fff', flex: 1 }}
+                        style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc', background: '#1e293b', color: '#fff', width: '100%', boxSizing: 'border-box' }}
                       />
-                      <button className="btn" onClick={joinRoom} style={{ background: '#3b82f6', width: 'auto', padding: '8px 16px' }}>Join</button>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className="btn back-btn" onClick={() => setShowLobbyModal(false)} style={{ flex: 1, margin: 0 }}>Close</button>
+                        <button className="btn" onClick={joinRoom} style={{ background: '#3b82f6', flex: 1, margin: 0 }}>Join</button>
+                      </div>
                     </div>
-                    <button className="btn back-btn" onClick={() => setShowLobbyModal(false)}>Close</button>
                   </>
                 )}
               </div>
