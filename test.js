@@ -1,11 +1,11 @@
-const fs = require('fs');
-const code = fs.readFileSync('./frontend/public/chess_module.js', 'utf8');
-eval(code);
+const chess_module = require('./frontend/public/chess_module.js');
 
-chess_module().then(mod => {
+async function run() {
+    console.log("Loading module...");
+    const mod = await chess_module();
+    console.log("Module loaded!");
     mod.initBoard();
-    console.log("Initial FEN:", mod.getBoardState());
-    const isLegal = mod.makeMove(6, 4, 4, 4, 1);
-    console.log("Move Legal:", isLegal);
-    console.log("After move FEN:", mod.getBoardState());
-});
+    console.log("FEN:", mod.getBoardState());
+}
+
+run();
