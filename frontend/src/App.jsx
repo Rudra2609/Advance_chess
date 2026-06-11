@@ -124,48 +124,58 @@ function App() {
   };
 
   const createRoom = async () => {
-    setLobbyError("");
-    const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const gameRef = ref(db, `games/${newRoomId}`);
-    
-    await set(gameRef, {
-      hostName: user.displayName || user.email.split('@')[0],
-      guestName: null,
-      status: "waiting", // waiting, playing, finished
-      lastMove: null
-    });
+    try {
+      setLobbyError("");
+      const newRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const gameRef = ref(db, `games/${newRoomId}`);
+      
+      await set(gameRef, {
+        hostName: user.displayName || user.email.split('@')[0],
+        guestName: null,
+        status: "waiting", // waiting, playing, finished
+        lastMove: null
+      });
 
-    onDisconnect(gameRef).remove(); // Auto-cleanup if host drops
+      onDisconnect(gameRef).remove(); // Auto-cleanup if host drops
 
-    setRoomId(newRoomId);
-    setIsHost(true);
-    setPlayerColor("white");
-    listenToRoom(newRoomId, true);
+      setRoomId(newRoomId);
+      setIsHost(true);
+      setPlayerColor("white");
+      listenToRoom(newRoomId, true);
+    } catch (error) {
+      console.error(error);
+      setLobbyError("Failed to create room. Is Firebase Realtime Database enabled?");
+    }
   };
 
   const joinRoom = async () => {
     if (!joinRoomCode) return;
-    setLobbyError("");
-    const code = joinRoomCode.toUpperCase();
-    const gameRef = ref(db, `games/${code}`);
-    const snapshot = await get(gameRef);
-    
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      if (data.status === "waiting") {
-        await update(gameRef, {
-          guestName: user.displayName || user.email.split('@')[0],
-          status: "playing"
-        });
-        setRoomId(code);
-        setIsHost(false);
-        setPlayerColor("black");
-        listenToRoom(code, false);
+    try {
+      setLobbyError("");
+      const code = joinRoomCode.toUpperCase();
+      const gameRef = ref(db, `games/${code}`);
+      const snapshot = await get(gameRef);
+      
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        if (data.status === "waiting") {
+          await update(gameRef, {
+            guestName: user.displayName || user.email.split('@')[0],
+            status: "playing"
+          });
+          setRoomId(code);
+          setIsHost(false);
+          setPlayerColor("black");
+          listenToRoom(code, false);
+        } else {
+          setLobbyError("Game is already in progress.");
+        }
       } else {
-        setLobbyError("Game is already in progress.");
+        setLobbyError("Invalid room code.");
       }
-    } else {
-      setLobbyError("Invalid room code.");
+    } catch (error) {
+      console.error(error);
+      setLobbyError("Failed to join room. Is Firebase Realtime Database enabled?");
     }
   };
 
