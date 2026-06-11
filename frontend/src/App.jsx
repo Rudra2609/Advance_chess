@@ -768,17 +768,28 @@ function App() {
             <div className={`status-box ${gameState !== 0 ? 'game-over' : ''}`}>
               {status}
             </div>
-            {pendingPromotion && (
-              <div className="promotion-modal">
-                <h3>Select Promotion Piece</h3>
-                <div className="promotion-buttons">
-                  <button onClick={() => handlePromotionSelection(1)}>Queen</button>
-                  <button onClick={() => handlePromotionSelection(4)}>Rook</button>
-                  <button onClick={() => handlePromotionSelection(2)}>Bishop</button>
-                  <button onClick={() => handlePromotionSelection(3)}>Knight</button>
+            {pendingPromotion && (() => {
+              const pColor = wasmModule.getTurn() === 0 ? 'w' : 'b';
+              return (
+                <div className="promotion-modal">
+                  <h3>Select Promotion Piece</h3>
+                  <div className="promotion-buttons">
+                    <button className="promotion-piece" onClick={() => handlePromotionSelection(1)}>
+                      <img src={`pieces/${pColor}Q.svg`} alt="Queen" style={{width: '70%', height: '70%'}} />
+                    </button>
+                    <button className="promotion-piece" onClick={() => handlePromotionSelection(4)}>
+                      <img src={`pieces/${pColor}R.svg`} alt="Rook" style={{width: '70%', height: '70%'}} />
+                    </button>
+                    <button className="promotion-piece" onClick={() => handlePromotionSelection(2)}>
+                      <img src={`pieces/${pColor}B.svg`} alt="Bishop" style={{width: '70%', height: '70%'}} />
+                    </button>
+                    <button className="promotion-piece" onClick={() => handlePromotionSelection(3)}>
+                      <img src={`pieces/${pColor}N.svg`} alt="Knight" style={{width: '70%', height: '70%'}} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
             <button onClick={handleQuitGame} className="btn back-btn">End Game</button>
           </div>
           <div className="board-wrapper" style={{ position: 'relative' }}>
