@@ -145,7 +145,7 @@ function App() {
       const promoChars = ['', 'q', 'b', 'n', 'r'];
       try {
         chess.move({ from: fromStr, to: toStr, promotion: promoChars[promotionPiece] });
-        setMoveHistory(chess.history({ verbose: true }));
+        setMoveHistory([...chess.history({ verbose: true })]);
         // Scroll to bottom
         setTimeout(() => historyEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
       } catch (e) {
@@ -171,10 +171,8 @@ function App() {
             const parts = aiMoveStr.split(",");
             if (parts.length === 4) {
               const [aiFromX, aiFromY, aiToX, aiToY] = parts.map(Number);
-              wasmModule.makeMove(aiFromX, aiFromY, aiToX, aiToY, 1); // AI defaults to Queen
-              setFen(wasmModule.getBoardState());
-              if (processGameState(wasmModule)) return;
-              setStatus("Your turn (White)");
+              // Recursively call executeMove so AI move is also logged in history
+              executeMove(aiFromX, aiFromY, aiToX, aiToY, 1);
             }
           } catch(e) {
             setStatus("AI Error: " + e.message);
