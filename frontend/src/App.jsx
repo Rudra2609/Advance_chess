@@ -25,8 +25,14 @@ function App() {
   const [elo, setElo] = useState(1200);
   const [wasmModule, setWasmModule] = useState(null);
   const [status, setStatus] = useState("Loading engine...");
-  const [gameState, setGameState] = useState(0); // 0=Ongoing, 1=Checkmate, 2=Stalemate, 3=Draw50, 4=DrawRep
+  const [gameState, setGameState] = useState(0); // 0=Ongoing, 1=Checkmate, 2=Stalemate, 3=Draw50, 4=DrawRep, 5=InsufficientMaterial, 6=Timeout, 7=TimeoutvsInsufficient
   const [pendingPromotion, setPendingPromotion] = useState(null);
+
+  // Time control states
+  const [timeControl, setTimeControl] = useState({ minutes: 10, increment: 0 });
+  const [whiteTime, setWhiteTime] = useState(600);
+  const [blackTime, setBlackTime] = useState(600);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   useEffect(() => {
     const initWasm = async () => {
@@ -48,6 +54,41 @@ function App() {
     initWasm();
   }, []);
 
+  // Timer Interval
+  useEffect(() => {
+    if (gameState !== 0 || !isTimerRunning || timeControl.minutes === 0) return;
+    
+    const timerId = setInterval(() => {
+      const activeColor = wasmModule.getTurn(); // 0 = White, 1 = Black
+      if (activeColor === 0) {
+        setWhiteTime((prev) => {
+          if (prev <= 1) { handleTimeout(0); return 0; }
+          return prev - 1;
+        });
+      } else {
+        setBlackTime((prev) => {
+          if (prev <= 1) { handleTimeout(1); return 0; }
+          return prev - 1;
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timerId);
+  }, [gameState, isTimerRunning, wasmModule, timeControl]);
+
+  const handleTimeout = (timedOutColor) => {
+    setIsTimerRunning(false);
+    const opponentColor = timedOutColor === 0 ? 1 : 0;
+    const opponentHasMaterial = wasmModule.hasMatingMaterial(opponentColor);
+    
+    if (opponentHasMaterial) {
+      setGameState(6);
+      setStatus(`Time Out! ${timedOutColor === 0 ? "Black" : "White"} wins!`);
+    } else {
+      setGameState(7);
+      setStatus("Draw: Timeout vs Insufficient Material");
+    }
+  };
+
   const handleStartGame = (mode) => {
     if (!wasmModule) {
       alert("Engine not loaded yet!");
@@ -58,12 +99,18 @@ function App() {
     setGameMode(mode);
     setGameState(0);
     setPendingPromotion(null);
+    setWhiteTime(timeControl.minutes * 60);
+    setBlackTime(timeControl.minutes * 60);
+    setIsTimerRunning(true);
     setStatus(mode === "ai" ? "Your turn (White)" : "White's turn");
   };
 
   const processGameState = (mod) => {
     const state = mod.getGameState();
-    setGameState(state);
+    if (state !== 0) {
+      setGameState(state);
+      setIsTimerRunning(false);
+    }
     if (state === 1) {
       setStatus(`Checkmate! ${mod.getTurn() === 0 ? "Black" : "White"} wins!`);
     } else if (state === 2) {
@@ -72,14 +119,24 @@ function App() {
       setStatus("Draw by 50-move rule.");
     } else if (state === 4) {
       setStatus("Draw by threefold repetition.");
+    } else if (state === 5) {
+      setStatus("Draw by Insufficient Material.");
     }
     return state !== 0;
   };
 
   const executeMove = (fromX, fromY, toX, toY, promotionPiece) => {
+    const activeColorBefore = wasmModule.getTurn();
     const isLegal = wasmModule.makeMove(fromX, fromY, toX, toY, promotionPiece);
     if (isLegal) {
       setFen(wasmModule.getBoardState());
+      
+      // Apply increment
+      if (timeControl.increment > 0 && timeControl.minutes > 0) {
+        if (activeColorBefore === 0) setWhiteTime(prev => prev + timeControl.increment);
+        else setBlackTime(prev => prev + timeControl.increment);
+      }
+
       if (processGameState(wasmModule)) return true;
       
       setStatus(wasmModule.getTurn() === 0 ? "White's turn" : "Black's turn");
@@ -139,6 +196,13 @@ function App() {
     setPendingPromotion(null);
   };
 
+  const formatTime = (seconds) => {
+    if (timeControl.minutes === 0) return "∞";
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="app-background">
       {gameMode === "menu" ? (
@@ -146,6 +210,25 @@ function App() {
           <h1 className="title">Advance Chess</h1>
           <div className="menu-card">
             <p className="status-text">{status}</p>
+            
+            <div className="time-control-section">
+              <label>Time Control: </label>
+              <select 
+                value={`${timeControl.minutes}|${timeControl.increment}`}
+                onChange={(e) => {
+                  const [m, i] = e.target.value.split('|').map(Number);
+                  setTimeControl({ minutes: m, increment: i });
+                }}
+                className="time-select"
+              >
+                <option value="0|0">Unlimited</option>
+                <option value="3|2">Blitz (3 | 2)</option>
+                <option value="5|3">Blitz (5 | 3)</option>
+                <option value="10|0">Rapid (10 | 0)</option>
+                <option value="15|10">Rapid (15 | 10)</option>
+              </select>
+            </div>
+
             <h2>Select Game Mode</h2>
             <button className="btn" onClick={() => handleStartGame("pvp")}>Player vs Player</button>
             <div className="ai-section">
@@ -166,6 +249,18 @@ function App() {
           <div className="sidebar">
             <h2 className="title-small">{gameMode === "ai" ? "Player vs AI" : "Player vs Player"}</h2>
             {gameMode === "ai" && <p className="subtitle">AI ELO: {elo}</p>}
+            
+            <div className="clocks-container">
+              <div className={`clock ${wasmModule && wasmModule.getTurn() === 1 ? 'active' : ''}`}>
+                <span className="clock-label">Black</span>
+                <span className="clock-time">{formatTime(blackTime)}</span>
+              </div>
+              <div className={`clock ${wasmModule && wasmModule.getTurn() === 0 ? 'active' : ''}`}>
+                <span className="clock-label">White</span>
+                <span className="clock-time">{formatTime(whiteTime)}</span>
+              </div>
+            </div>
+
             <div className={`status-box ${gameState !== 0 ? 'game-over' : ''}`}>
               {status}
             </div>
