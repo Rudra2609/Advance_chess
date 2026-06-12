@@ -49,8 +49,9 @@ function App() {
   const [fen, setFen] = useState("start");
   const [elo, setElo] = useState(250);
   const [wasmModule, setWasmModule] = useState(null);
-  const [status, setStatus] = useState("Loading engine...");
-  const [gameState, setGameState] = useState(0); // 0=Ongoing, 1=Checkmate, 2=Stalemate, 3=Draw50, 4=DrawRep, 5=InsufficientMaterial, 6=Timeout, 7=TimeoutvsInsufficient
+  const [status, setStatus] = useState("Waiting to start...");
+  const [gameState, setGameState] = useState(0); // 0=playing, 1=checkmate, 2=stalemate, etc., 6=resign, 7=draw agreement
+  const gameStateRef = useRef(0);
   const [pendingPromotion, setPendingPromotion] = useState(null);
 
   // Editor states
@@ -72,6 +73,8 @@ function App() {
   const [opponentName, setOpponentName] = useState(null);
   const [showLobbyModal, setShowLobbyModal] = useState(false);
   const [lobbyError, setLobbyError] = useState("");
+  const [incomingDrawOffer, setIncomingDrawOffer] = useState(false);
+  const [waitingForDrawResponse, setWaitingForDrawResponse] = useState(false);
   const dbRef = useRef(null); // Keep track of current game ref for cleanup
   const isQuitting = useRef(false); // Track if we intentionally quit
 
@@ -257,6 +260,28 @@ function App() {
             setIncomingMove(data.lastMove);
           }
         }
+
+        if (data.gameAction) {
+          const myRole = isHostLocal ? 'host' : 'guest';
+          if (data.gameAction.type === 'resign' && data.gameAction.by !== myRole && gameStateRef.current === 0) {
+            setGameState(6);
+            gameStateRef.current = 6;
+            setStatus("Opponent resigned. You win!");
+            setIsTimerRunning(false);
+          } else if (data.gameAction.type === 'offer_draw' && data.gameAction.by !== myRole && gameStateRef.current === 0) {
+            setIncomingDrawOffer(true);
+          } else if (data.gameAction.type === 'accept_draw' && gameStateRef.current === 0) {
+            setGameState(7);
+            gameStateRef.current = 7;
+            setStatus("Draw by mutual agreement.");
+            setIsTimerRunning(false);
+            setIncomingDrawOffer(false);
+            setWaitingForDrawResponse(false);
+          } else if (data.gameAction.type === 'decline_draw') {
+            setIncomingDrawOffer(false);
+            setWaitingForDrawResponse(false);
+          }
+        }
       }
     });
   };
@@ -320,7 +345,10 @@ function App() {
     setMoveHistory([]);
     setGameMode(mode);
     setGameState(0);
+    gameStateRef.current = 0;
     setPendingPromotion(null);
+    setIncomingDrawOffer(false);
+    setWaitingForDrawResponse(false);
     setWhiteTime(timeControl.minutes * 60);
     setBlackTime(timeControl.minutes * 60);
     setIsTimerRunning(true);
@@ -338,15 +366,73 @@ function App() {
     }
     
     isQuitting.current = true;
+    setIsTimerRunning(false);
+    setGameMode("menu");
+    setPendingPromotion(null);
+    setIncomingDrawOffer(false);
+    setWaitingForDrawResponse(false);
     
-    // Clean up online room if quitting an active online match
-    if (gameMode === "online" && dbRef.current) {
-      remove(dbRef.current);
+    if (dbRef.current) {
+      remove(dbRef.current).catch(e => console.error("Error removing room:", e));
+      dbRef.current = null;
     }
-    
     setRoomId(null);
     setShowLobbyModal(false);
-    handleStartGame("menu");
+  };
+
+  const handleResign = () => {
+    if (gameState !== 0) return;
+    
+    setIsTimerRunning(false);
+    setGameState(6);
+    gameStateRef.current = 6;
+    
+    if (gameMode === "ai") {
+      setStatus("You resigned. AI wins.");
+    } else if (gameMode === "pvp") {
+      const loser = wasmModule.getTurn() === 0 ? "White" : "Black";
+      const winner = wasmModule.getTurn() === 0 ? "Black" : "White";
+      setStatus(`${loser} resigned. ${winner} wins.`);
+    } else if (gameMode === "online" && dbRef.current) {
+      update(dbRef.current, {
+        gameAction: { type: 'resign', by: isHost ? 'host' : 'guest', timestamp: Date.now() }
+      });
+      setStatus("You resigned. Opponent wins.");
+    }
+  };
+
+  const handleOfferDraw = () => {
+    if (gameState !== 0) return;
+
+    if (gameMode === "pvp") {
+      setGameState(7);
+      gameStateRef.current = 7;
+      setStatus("Draw by mutual agreement.");
+      setIsTimerRunning(false);
+    } else if (gameMode === "online" && dbRef.current) {
+      setWaitingForDrawResponse(true);
+      update(dbRef.current, {
+        gameAction: { type: 'offer_draw', by: isHost ? 'host' : 'guest', timestamp: Date.now() }
+      });
+    }
+  };
+
+  const handleAcceptDraw = () => {
+    if (gameMode === "online" && dbRef.current) {
+      update(dbRef.current, {
+        gameAction: { type: 'accept_draw', timestamp: Date.now() }
+      });
+    }
+    setIncomingDrawOffer(false);
+  };
+
+  const handleDeclineDraw = () => {
+    if (gameMode === "online" && dbRef.current) {
+      update(dbRef.current, {
+        gameAction: { type: 'decline_draw', timestamp: Date.now() }
+      });
+    }
+    setIncomingDrawOffer(false);
   };
 
   const triggerAIMove = async (mod) => {
@@ -850,6 +936,28 @@ function App() {
             <div className={`status-box ${gameState !== 0 ? 'game-over' : ''}`}>
               {status}
             </div>
+
+            {gameState === 0 && (
+              <div className="action-buttons">
+                <button onClick={handleResign} className="btn action-btn resign-btn">Resign</button>
+                {gameMode !== "ai" && (
+                  <button onClick={handleOfferDraw} className="btn action-btn draw-btn" disabled={waitingForDrawResponse}>
+                    {waitingForDrawResponse ? "Draw Offered..." : "Offer Draw"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {incomingDrawOffer && (
+              <div className="draw-offer-modal">
+                <p>Opponent offered a draw</p>
+                <div className="draw-offer-buttons">
+                  <button onClick={handleAcceptDraw} className="btn accept-btn">Accept</button>
+                  <button onClick={handleDeclineDraw} className="btn decline-btn">Decline</button>
+                </div>
+              </div>
+            )}
+
             {pendingPromotion && (() => {
               const pColor = wasmModule.getTurn() === 0 ? 'w' : 'b';
               return (
