@@ -395,28 +395,6 @@ jobs:
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Here's how to get started:
-
-1. **Fork** the repository
-2. **Create a feature branch:** `git checkout -b feature/my-new-feature`
-3. **Commit your changes:** `git commit -m 'feat: add some feature'`
-4. **Push to the branch:** `git push origin feature/my-new-feature`
-5. **Open a Pull Request**
-
-### Ideas for contributions
-
-- [ ] Stockfish integration as an optional stronger engine
-- [ ] Game history / PGN export
-- [ ] Opening book for the AI
-- [ ] Puzzle mode (solve tactical positions)
-- [ ] ELO rating system for multiplayer
-- [ ] Spectator mode for live games
-- [ ] Move analysis / hints
-
----
-
 ## 📄 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
