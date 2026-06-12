@@ -24,16 +24,16 @@ int AI::minimax(Board& b, int depth, int alpha, int beta) {
     bool maximizingPlayer = (currentTurn == WHITE);
     std::vector<Move> moves = b.getLegalMoves(currentTurn);
 
-    if (moves.empty()) {
-        if (b.isInCheck(currentTurn)) {
+    if(moves.empty()) {
+        if(b.isInCheck(currentTurn)) {
             return maximizingPlayer ? -99999 + (maxDepth - depth) : 99999 - (maxDepth - depth); 
         }
         return 0; // Stalemate
     }
 
-    if (maximizingPlayer) {
+    if(maximizingPlayer) {
         int maxEval = -100000;
-        for (const Move& move : moves) {
+        for(const Move& move : moves) {
             Board nextBoard = b;
             nextBoard.makeMoveAI(move);
             int eval = minimax(nextBoard, depth - 1, alpha, beta);
@@ -42,15 +42,16 @@ int AI::minimax(Board& b, int depth, int alpha, int beta) {
             if (beta <= alpha) break; // Beta cutoff
         }
         return maxEval;
-    } else {
+    } 
+    else {
         int minEval = 100000;
-        for (const Move& move : moves) {
+        for(const Move& move : moves) {
             Board nextBoard = b;
             nextBoard.makeMoveAI(move);
             int eval = minimax(nextBoard, depth - 1, alpha, beta);
             minEval = std::min(minEval, eval);
             beta = std::min(beta, eval);
-            if (beta <= alpha) break; // Alpha cutoff
+            if(beta <= alpha) break; // Alpha cutoff
         }
         return minEval;
     }
@@ -60,12 +61,12 @@ Move AI::getBestMove(const Board& b) {
     Color myColor = b.getTurn();
     std::vector<Move> legalMoves = const_cast<Board&>(b).getLegalMoves(myColor);
     
-    if (legalMoves.empty()) {
+    if(legalMoves.empty()) {
         return Move(); // No moves
     }
 
     // Shuffle legal moves to prevent the AI from always playing the exact same opening game
-    for (size_t i = 0; i < legalMoves.size(); ++i) {
+    for(size_t i = 0; i < legalMoves.size(); ++i) {
         size_t j = i + rand() % (legalMoves.size() - i);
         std::swap(legalMoves[i], legalMoves[j]);
     }
@@ -74,7 +75,7 @@ Move AI::getBestMove(const Board& b) {
     // At ELO 250, 70% chance to play a random move
     // At ELO 1500, 0% chance to play a random move
     int blunderChance = 0;
-    if (elo < 1500) {
+    if(elo < 1500) {
         blunderChance = 70 - ((elo - 250) * 70 / 1250);
         if (blunderChance < 0) blunderChance = 0;
     }
