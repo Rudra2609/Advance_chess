@@ -4,10 +4,6 @@ Welcome to **Tactic Flow**, a high-performance, real-time multiplayer web-based 
 
 Play it live here: 👉 **[https://rudra2609.github.io/Tactic_Flow/](https://rudra2609.github.io/Tactic_Flow/)**
 
-![Tactic Flow Preview](https://github.com/user-attachments/assets/1903e52b-59d7-4433-b17e-639462da5ae0)
-
----
-
 ## ✨ Features
 
 - **Blazing Fast AI Engine**: At its core, Tactic Flow runs a custom **C++ Chess Engine** that has been compiled directly into **WebAssembly (WASM)**. This allows the AI to calculate deep variations and evaluate positions at near-native speeds directly in your browser without requiring a backend server.
