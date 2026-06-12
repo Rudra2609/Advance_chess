@@ -757,7 +757,7 @@ function App() {
       ) : gameMode === "editor" ? (
         <div className="game-container">
           <div className="sidebar editor-sidebar">
-            <h2 className="title-small">Custom Setup</h2>
+            <h2 className="title-small">Board Editor</h2>
             <div className="editor-controls">
               <p>Select piece, then click square to place.</p>
               <div className="piece-palette">
