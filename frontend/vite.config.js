@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/Tactic_Flow/',
+  base: process.env.VERCEL ? '/' : '/Tactic_Flow/',
 })
