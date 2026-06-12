@@ -236,6 +236,17 @@ body {
   opacity: 1;
 }
 
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.editor-actions .btn {
+  padding: 12px 24px;
+  font-size: 1rem;
+}
+
 .ai-section {
   display: flex;
   flex-direction: column;
