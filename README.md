@@ -109,8 +109,8 @@ The multiplayer layer is powered by **Firebase Realtime Database**, enabling ins
 │                        Browser (Client)                     │
 │                                                             │
 │  ┌───────────────────┐        ┌──────────────────────────┐  │
-│  │   React App        │        │      Web Worker          │  │
-│  │  (Main Thread)     │        │   (AI Thread)            │  │
+│  │     React App     │        │       Web Worker         │  │
+│  │   (Main Thread)   │        │      (AI Thread)         │  │
 │  │                   │        │                          │  │
 │  │  ┌─────────────┐  │  msg   │  ┌────────────────────┐  │  │
 │  │  │  chess.js   │  │◄──────►│  │  chess_module.wasm │  │  │
@@ -118,13 +118,13 @@ The multiplayer layer is powered by **Firebase Realtime Database**, enabling ins
 │  │  └─────────────┘  │        │  └────────────────────┘  │  │
 │  │                   │        └──────────────────────────┘  │
 │  │  ┌─────────────┐  │                                      │
-│  │  │react-chess- │  │        ┌──────────────────────────┐  │
-│  │  │   board     │  │        │  Firebase Realtime DB    │  │
-│  │  └─────────────┘  │◄──────►│  (Multiplayer sync)      │  │
+│  │  │ react-chess-│  │        ┌──────────────────────────┐  │
+│  │  │    board    │  │        │   Firebase Realtime DB   │  │
+│  │  └─────────────┘  │◄──────►│   (Multiplayer sync)     │  │
 │  │                   │        └──────────────────────────┘  │
 │  │  ┌─────────────┐  │                                      │
-│  │  │ Firebase    │  │        ┌──────────────────────────┐  │
-│  │  │   Auth      │  │◄──────►│  Firebase Auth Service   │  │
+│  │  │   Firebase  │  │        ┌──────────────────────────┐  │
+│  │  │    Auth     │  │◄──────►│  Firebase Auth Service   │  │
 │  │  └─────────────┘  │        └──────────────────────────┘  │
 │  └───────────────────┘                                      │
 └─────────────────────────────────────────────────────────────┘
