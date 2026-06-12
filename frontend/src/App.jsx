@@ -550,14 +550,21 @@ function App() {
         return false;
       }
 
-      const piece = getPieceAt(fen, fromX, fromY);
+      let actualToY = toY;
+      const pieceStr = getPieceAt(fen, fromX, fromY);
       
-      if ((piece === 'P' && toX === 0) || (piece === 'p' && toX === 7)) {
-        setPendingPromotion({ fromX, fromY, toX, toY });
+      // Handle castling by dragging King onto Rook
+      if (pieceStr && pieceStr.toLowerCase() === 'k') {
+        if (fromY === 4 && toY === 7) actualToY = 6; // Kingside
+        if (fromY === 4 && toY === 0) actualToY = 2; // Queenside
+      }
+
+      if ((pieceStr === 'P' && toX === 0) || (pieceStr === 'p' && toX === 7)) {
+        setPendingPromotion({ fromX, fromY, toX, toY: actualToY });
         return true; // Visually keep the piece there until selected
       }
 
-      return executeMove(fromX, fromY, toX, toY, 1); // 1 = Queen default
+      return executeMove(fromX, fromY, toX, actualToY, 1); // 1 = Queen default
     } catch (e) {
       setStatus(`Crash: ${e.message}`);
       return false;
