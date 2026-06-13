@@ -1043,7 +1043,8 @@ function App() {
             )}
 
             {activeTab === "history" ? (
-              <div className="history-list" ref={historyContainerRef}>
+              <>
+                <div className="history-list" ref={historyContainerRef}>
                 {movePairs.map((pair, idx) => {
                   const whiteIdx = idx * 2;
                   const blackIdx = idx * 2 + 1;
@@ -1098,6 +1099,7 @@ function App() {
                   disabled={viewIndex === -1 || moveHistory.length === 0}
                 >&gt;&gt;</button>
               </div>
+              </>
             ) : (
               <div className="chat-container">
                 <div className="chat-messages">
