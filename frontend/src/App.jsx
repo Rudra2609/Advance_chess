@@ -1007,7 +1007,7 @@ function App() {
             <div className="board-container">
               <Chessboard 
                 options={{
-                  position: fen,
+                  position: displayFen,
                   onPieceDrop: onDrop,
                   onSquareClick: onGameSquareClick,
                   boardOrientation: (gameMode === "ai" || gameMode === "online") ? playerColor : "white",
